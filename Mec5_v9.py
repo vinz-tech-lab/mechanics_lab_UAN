@@ -30,6 +30,62 @@ plt.rcParams.update({
     "legend.labelcolor": "#dddddd",
 })
 
+# --- Helper: gated "hidden" exercise ---
+def hidden_exercise(key_prefix, gate_question, exercise_md, hint=None,
+                    accepted_answers=None, numeric_target=None, numeric_tolerance=None,
+                    title="🔒 Hidden bonus exercise — answer the gate question to unlock"):
+    """
+    Renders a *collapsed* expander whose label only hints that an exercise exists.
+    When the student opens it, a gate question is shown. They must type the correct
+    answer (string match against `accepted_answers`, OR numeric within
+    `numeric_tolerance` of `numeric_target`) to reveal the bonus exercise.
+
+    Once unlocked in a session, it stays unlocked across reruns.
+    """
+    unlocked_key = f"{key_prefix}_unlocked"
+    if unlocked_key not in st.session_state:
+        st.session_state[unlocked_key] = False
+
+    def _normalize(s):
+        return (s or "").strip().lower().replace("%", "").replace(" ", "").replace(",", ".")
+
+    def _is_correct(ans):
+        norm = _normalize(ans)
+        if accepted_answers:
+            if norm in [_normalize(a) for a in accepted_answers]:
+                return True
+        if numeric_target is not None and numeric_tolerance is not None:
+            try:
+                v = float(norm)
+                if abs(v - numeric_target) <= numeric_tolerance:
+                    return True
+            except ValueError:
+                pass
+        return False
+
+    with st.expander(title):
+        if st.session_state[unlocked_key]:
+            st.success("🔓 **UNLOCKED** — bonus exercise below.")
+            st.markdown(exercise_md)
+            return
+
+        st.markdown(f"**🔑 Gate question:** {gate_question}")
+        if hint:
+            st.caption(f"💡 *Hint:* {hint}")
+        ans = st.text_input(
+            "Type your answer to unlock the bonus exercise:",
+            key=f"{key_prefix}_input",
+            placeholder="Your answer here…",
+        )
+        if ans:
+            if _is_correct(ans):
+                st.session_state[unlocked_key] = True
+                st.success("🔓 **UNLOCKED** — bonus exercise below.")
+                st.markdown(exercise_md)
+            else:
+                st.warning("Not quite — re-read the theory deep-dive in this tab and try again. The answer is hidden somewhere in the formulas above.")
+
+
 # --- UI Setup ---
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "👋 Welcome & Registration", 
@@ -325,6 +381,47 @@ Compute the **plastic** elongation that remains after the bar fractures and the 
 - $\varepsilon_{\text{plastic}} = 0.18 - 0.003 = \mathbf{0.177}$
 - Permanent gauge elongation $= 0.177 \times 200\;\text{mm} = \mathbf{35.4\;\text{mm}}$
 """)
+
+    # ---- Hidden bonus exercise (gated) ----
+    hidden_exercise(
+        key_prefix="t2_bonus",
+        title="🔒 Hidden bonus exercise — explore the worked exercises above to unlock",
+        gate_question=(
+            "In *Worked Exercise 6* above we computed the modulus of toughness of A36 steel. "
+            "What value (in **MJ/m³**, integer) was obtained?"
+        ),
+        hint="Look at the bold number in the steel calculation — round to the nearest integer.",
+        accepted_answers=["81", "80", "82", "79", "83", "81.3"],
+        numeric_target=81,
+        numeric_tolerance=2.5,
+        exercise_md=r"""
+### 🏆 Bonus — When 'engineering' becomes wildly misleading: rubber at 400 % strain
+
+A natural-rubber band is stretched until $\varepsilon_{\text{eng}} = 4.00$ (i.e. 400 %).
+The engineering stress at that point is measured as $\sigma_{\text{eng}} = 8$ MPa.
+
+**Compute three quantities and reflect on the result:**
+
+(i) The **true strain** $\varepsilon_t = \ln(1 + \varepsilon_{\text{eng}})$.
+
+(ii) The **true stress** $\sigma_t = \sigma_{\text{eng}}(1 + \varepsilon_{\text{eng}})$.
+
+(iii) The **ratio** $\sigma_t/\sigma_{\text{eng}}$.
+
+---
+
+**Solution.**
+- (i) $\varepsilon_t = \ln(5.00) = \mathbf{1.609}$
+- (ii) $\sigma_t = 8 \times 5.00 = \mathbf{40\;\text{MPa}}$
+- (iii) $\sigma_t/\sigma_{\text{eng}} = \mathbf{5.00}$
+
+> **Reflection.** At small strain the two definitions coincide (Ex 1 vs Ex 2 in the worked
+> set differed by < 1 % at $\varepsilon=0.002$). At rubber-band strains, *engineering stress
+> under-reports the true load by a factor of five*. This is why elastomer test reports must
+> always state the strain measure used, and why finite-element codes for rubber switch to
+> hyperelastic strain-energy models (Mooney-Rivlin, Ogden) instead of Hookean stress-strain.
+""",
+    )
 
     st.divider()
 
@@ -1191,6 +1288,50 @@ This is roughly the yield strength of half-hard cold-rolled brass — and shows 
 how an alloy designer trades grain refinement, alloying, and cold work to hit a target strength.
 """)
 
+    # ---- Hidden bonus exercise (gated) ----
+    hidden_exercise(
+        key_prefix="t3_bonus",
+        title="🔒 Hidden bonus exercise — read the deep-dive expander to unlock",
+        gate_question=(
+            r"What is the **surname** of the scientist whose relation $\tau = \alpha G b\sqrt{\rho}$ "
+            "links flow stress to dislocation density? (One word, English spelling.)"
+        ),
+        hint="It's also the surname of the scientist who derived the polycrystal averaging factor M ≈ 3.06.",
+        accepted_answers=["taylor", "g.i. taylor", "gi taylor", "geoffrey taylor"],
+        exercise_md=r"""
+### 🏆 Bonus — From Schmid factor to the Taylor factor
+
+In a single crystal pulled along $[001]$, you found in *Worked Exercise 2* that $m = 0.408$
+on the $(111)[\bar{1}01]$ system. But a real polycrystal contains **billions of grains**,
+each with a different orientation relative to the load. Some grains are well-oriented
+($m \to 0.5$, easy slip); others are badly oriented ($m \to 0$, hard slip).
+
+When you average over a random texture, the **Taylor factor** $M = \langle 1/m\rangle$
+emerges. For a randomly textured **FCC** polycrystal Taylor's calculation gives $M \approx 3.06$.
+
+**Problem.** Pure annealed nickel has $\tau_{CRSS} \approx 5$ MPa (single-crystal value).
+
+(i) Predict the polycrystalline yield strength using $\sigma_y = M\,\tau_{CRSS}$.
+
+(ii) Compare with the experimental Hall–Petch friction stress $\sigma_0 \approx 50$ MPa for Ni
+(see Tab 4 worked exercises). Where does the rest of the strength come from?
+
+---
+
+**Solution.**
+- (i) $\sigma_y = 3.06 \times 5 = \mathbf{15.3\;\text{MPa}}$ — the *intrinsic* contribution of polycrystalline averaging.
+- (ii) The remaining $50 - 15 \approx \mathbf{35\;\text{MPa}}$ comes from the lattice friction
+  (Peierls stress) plus residual forest dislocations even in the annealed state. Together
+  these constitute $\sigma_0$.
+
+> **Why $M = 3.06$, not 1/0.5 = 2?** Because no real polycrystal can deform with all grains
+> finding their easiest slip system — *strain compatibility* across grain boundaries forces
+> several systems to operate simultaneously in each grain. Taylor's 1938 paper showed that
+> at least 5 independent slip systems must be active to accommodate an arbitrary plastic strain
+> tensor. This raises the average resolved stress required, hence $M > 2$.
+""",
+    )
+
 # ==========================================
 # TAB 4: HALL-PETCH THEORY
 # ==========================================
@@ -1432,6 +1573,43 @@ $G=78$ GPa, $b=0.255$ nm to add the dislocation contribution.
 > Matches the typical YS of half-hard 316L ($\approx 380$–420 MPa) — quantitative validation
 > that the four strengthening mechanisms really do add (approximately).
 """)
+
+    # ---- Hidden bonus exercise (gated) ----
+    hidden_exercise(
+        key_prefix="t4_bonus",
+        title="🔒 Hidden bonus exercise — only opens if you remember the inverse Hall–Petch crossover",
+        gate_question=(
+            "Below approximately what grain size (in **nanometers**, integer) does the *inverse* "
+            "Hall–Petch effect typically begin to dominate?"
+        ),
+        hint="The number is mentioned in BOTH the deep-dive AND Worked Exercise 4 of this tab.",
+        accepted_answers=["10", "15", "20", "12"],
+        numeric_target=15,
+        numeric_tolerance=8,  # accepts 7–23 nm — all defensible literature values
+        exercise_md=r"""
+### 🏆 Bonus — The absurd extrapolation: where Hall–Petch hits the ideal-strength ceiling
+
+Use the copper Hall–Petch fit from *Worked Exercise 1* ($\sigma_0 = 25$ MPa, $k_y = 110$ MPa·µm$^{1/2}$).
+Pure copper has $E = 130$ GPa; the **theoretical (ideal) strength** of any crystal is approximately
+$\sigma_{\text{ideal}} \approx E/10 = 13$ GPa $= 13\,000$ MPa.
+
+**Problem.** At what grain size $d^{*}$ would the Hall–Petch formula predict that the yield
+strength reaches the ideal strength of copper? Comment on the result.
+
+---
+
+**Solution.**
+$$13\,000 = 25 + \frac{110}{\sqrt{d^{*}}} \;\Rightarrow\; \sqrt{d^{*}} = \frac{110}{12\,975} = 8.48\times 10^{-3}\;\mu\text{m}^{1/2}$$
+$$d^{*} = (8.48\times 10^{-3})^{2} = 7.2\times 10^{-5}\;\mu\text{m} = 7.2\times 10^{-2}\;\text{nm} = \mathbf{0.072\;\text{nm} = 72\;\text{pm}}$$
+
+> **Reflection.** A copper atom has a diameter of about **256 pm**. The Hall–Petch equation
+> would require us to make grains *smaller than a single atom* to reach the ideal strength —
+> a manifest absurdity. The mechanism MUST break down long before this. The fact that experiments
+> show the breakdown at $d \sim 10$–20 nm (where there are still ~50 atoms across each grain)
+> is consistent with grain-boundary sliding taking over once the grain is too small to support
+> a coherent dislocation pile-up. **Always sanity-check an extrapolation against a physical limit.**
+""",
+    )
 
     st.divider()
 
@@ -2294,6 +2472,58 @@ For most metals $\alpha r_0$ falls in the range 3.0–4.5, giving ratios from $\
 Which is why **LJ is a passable model for noble gases** (where $\alpha r_0 \to$ large because the well
 is narrow) but a poor one for metals.
 """)
+
+    # ---- Hidden bonus exercise (gated) ----
+    hidden_exercise(
+        key_prefix="t5_bonus",
+        title="🔒 Hidden bonus exercise — only opens once you've memorized the key conversion factor",
+        gate_question=(
+            r"What is the conversion factor $1\;\text{eV/Å}^2 = \;?\;\text{N/m}$? "
+            "(Numerical value with **two decimal places**.)"
+        ),
+        hint="It's stated explicitly in the master-formula block of Worked Exercise 1.",
+        accepted_answers=["16.02", "16.0", "16", "16.03", "16.01", "16.022"],
+        numeric_target=16.02,
+        numeric_tolerance=0.10,
+        exercise_md=r"""
+### 🏆 Bonus — Predict $E$ for diamond and watch the model **flip**
+
+Carbon–carbon $sp^3$ covalent bond in diamond:
+$D \approx 3.6$ eV (very deep), $\alpha \approx 2.0$ Å$^{-1}$ (very narrow well), $r_0 \approx 1.54$ Å.
+
+**Problem.**
+(i) Compute the bond stiffness $k = 2D\alpha^{2}$ in both eV/Å² and N/m.
+
+(ii) Use $E \approx k/r_0$ to predict $E_{\text{calc}}$ in GPa.
+
+(iii) Compare to experimental diamond $E_{\text{exp}} \approx 1050$ GPa.
+
+(iv) **Surprise question:** Was the predicted $E$ above or below the experimental value?
+Why does the model flip direction (under-predict → over-predict) when going from copper to diamond?
+
+---
+
+**Solution.**
+- (i) $k = 2 \times 3.6 \times 4 = 28.8\;\text{eV/Å}^2 = 28.8 \times 16.02 = \mathbf{461\;\text{N/m}}$
+- (ii) $E = 461/(1.54\times 10^{-10}) = 3.0\times 10^{12}\;\text{Pa} = \mathbf{3000\;\text{GPa}}$
+- (iii) Experimental: 1050 GPa. Ratio $E_{\text{calc}}/E_{\text{exp}} \approx \mathbf{2.85}$ — the
+  1-D bond model **over-predicts diamond by nearly 3×**. (Cu, by contrast, was *under*-predicted
+  by ~40 % — see Worked Ex 1.)
+
+> **Why does the direction flip?**
+> - For **metals** (Cu, W, ...) the simple 1-D bond model misses the *delocalized, many-body*
+>   nature of metallic bonding — the "electron sea" actually contributes more stiffness than
+>   a pair potential can capture, so $E_{\text{calc}} < E_{\text{exp}}$.
+> - For **covalent solids** (diamond, Si) each atom forms only **4** strong directional bonds
+>   at $109.5^\circ$ — not the 6 nearest neighbours of a simple-cubic packing assumed by our
+>   $E \approx k/r_0$ formula. Counting all 6 axial bonds at full stiffness over-counts the
+>   actual load-carrying connectivity, so $E_{\text{calc}} > E_{\text{exp}}$.
+>
+> The corrected formula uses a **structure factor** $\xi$ that depends on coordination and bond geometry:
+> $E = \xi \cdot k/r_0$. For diamond cubic, $\xi \approx 1/3$ — bringing $E_{\text{calc}}$ down to ~1000 GPa,
+> matching experiment. **The pair-potential is correct in scaling but needs the right geometric prefactor.**
+""",
+    )
 
     # --- Comparison plot: E_calc (LJ vs Morse) vs E_exp ---
     st.subheader("📊 How well do pair potentials predict $E$?")
