@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyArrowPatch
 from matplotlib.lines import Line2D
+from pathlib import Path
 
 # --- Page Configuration ---
 st.set_page_config(page_title="Mechanical properties Number UAN", layout="wide")
@@ -87,12 +88,13 @@ def hidden_exercise(key_prefix, gate_question, exercise_md, hint=None,
 
 
 # --- UI Setup ---
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab_report, tab6 = st.tabs([
     "👋 Welcome & Registration", 
     "📈 Stress-Strain Curve", 
     "⚛️ Dislocations & Defects", 
     "📏 Hall-Petch Theory", 
     "⚡ Atomic Origin of Modulus", 
+    "📑 Lab Report",
     "📝 Assessment"
 ])
 
@@ -2613,6 +2615,378 @@ This is the **harmonic approximation** — the bond behaves like a tiny spring o
 **The "ideal strength" — the inflection point on F(r):**
 The force $F(r) = -\partial U/\partial r$ has a maximum at the inflection point of $U(r)$, marked on the F-plot. This is the theoretical maximum stress a bond can sustain before snapping — typically around $E/10$ in real materials, but considerably higher in this simple model because real solids fail by dislocation motion (in metals) or crack growth (in ceramics) long before bonds reach their ideal limit.
 """)
+
+# ==========================================
+# TAB 7: LAB REPORT GUIDE
+# ==========================================
+with tab_report:
+    st.header("📑 Writing Your Laboratory Report")
+
+    # ============================================================
+    # 🚀 QUICK-START: Download the compact Word template
+    # ============================================================
+    with st.container(border=True):
+        st.markdown("### 🚀 Quick start — short on time? Download the Word template")
+        st.markdown(
+            "If you have a tight deadline, **start here**. The template below contains only "
+            "the four essential sections — *Abstract, Introduction, Analysis, Conclusions* — "
+            "plus a pre-filled References list. All the equations you need are already typed in "
+            "(Hooke's law, true stress/strain, Hall–Petch, Schmid's law, resilience and toughness, "
+            "atomic origin of $E$). Just fill in the blanks marked `[ … ]` with your simulator data."
+        )
+
+        # Try to load the bundled template from the script's folder
+        try:
+            tpl_path = Path(__file__).parent / "Lab_Report_Template.docx"
+        except NameError:
+            tpl_path = Path("Lab_Report_Template.docx")
+
+        if tpl_path.exists():
+            with open(tpl_path, "rb") as f:
+                tpl_bytes = f.read()
+            cdl, ccap = st.columns([1, 2])
+            with cdl:
+                st.download_button(
+                    label="⬇️ Download Lab_Report_Template.docx",
+                    data=tpl_bytes,
+                    file_name="Lab_Report_Template.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    type="primary",
+                )
+            with ccap:
+                st.caption(
+                    f"📄 ~{len(tpl_bytes)/1024:.0f} KB · US Letter, 1\" margins, Arial 11 pt · "
+                    "Editable in Word, LibreOffice, or Google Docs."
+                )
+        else:
+            st.warning(
+                "**Template file not found.** Make sure `Lab_Report_Template.docx` is placed "
+                "in the same folder as this script. (Your instructor should ship the two files together.)"
+            )
+
+        st.markdown(
+            "**What's inside the template:**\n"
+            "1. **Title page** — title, authors, course, date, standards followed.\n"
+            "2. **Abstract** (150–200 words) — prompt asking for ≥ 3 numerical results.\n"
+            "3. **Introduction** — pre-typed equations and definitions. Just add citations.\n"
+            "4. **Analysis** — five sub-sections with empty tables (tensile properties, Hall–Petch) "
+            "and figure placeholders for plots from the simulator.\n"
+            "5. **Conclusions** — five numbered placeholders waiting for your quantitative findings.\n"
+            "6. **References** — 7 entries pre-formatted in IEEE style (ASTM E8, ISO 6892, Dieter, "
+            "Callister, Meyers & Chawla, Hall, Petch).\n\n"
+            "*Note: this lightweight version intentionally **omits Hollomon-law (strain-hardening) "
+            "analysis** to keep the workload manageable.*"
+        )
+
+    st.markdown(
+        "Want the full IMRAD version with Methods, Discussion, and Uncertainty Analysis as separate "
+        "sections? See the section-by-section guide further down this tab — then transcribe your "
+        "expanded content into the same `.docx` file."
+    )
+
+    st.divider()
+
+    st.markdown(r"""
+After running the four interactive simulators in this module you have generated enough
+data to write a **technical lab report** in the style accepted by the international
+mechanical-testing community. This tab gives you:
+
+1. The **canonical structure** every lab report should follow (IMRAD + ASTM E8 §12).
+2. Section-by-section **content & equation requirements** drawn from the standards and from
+   *Dieter, Mechanical Metallurgy* (the universally cited graduate textbook on this topic).
+3. A **rubric/checklist** the instructor will use to grade you.
+4. A **downloadable Word template** (the *Quick start* box above) — write your report directly
+   inside it; your work goes into the `.docx`, not into this app.
+
+> **Why bother with a structured format?** Standardization is the backbone of mechanical
+> testing. ASTM E8 — first issued in 1924 — is the *oldest continuously used metals testing
+> standard* and explicitly defines a reporting format so that results from one lab can be
+> compared with another's. Your report is the document that will travel beyond the lab
+> bench: it must be self-contained, reproducible, and quantitative.
+""")
+
+    # ---------------- Bibliographic grounding ----------------
+    with st.expander("📚 Bibliographic standards behind this report format"):
+        st.markdown(r"""
+The structure proposed in this tab is the synthesis of four widely accepted sources.
+Cite them in your **References** section.
+
+| Source | Role | What you must follow |
+|---|---|---|
+| **ASTM E8/E8M-25** *Standard Test Methods for Tension Testing of Metallic Materials* | The legally binding reporting standard | Section 12 — list of items the report MUST contain (specimen, machine, strain rate, temperature, results) |
+| **ISO 6892-1:2019** *Method of test at room temperature* | International equivalent of ASTM E8 | Strain-rate Methods A1/A2/B; metric specimen geometry |
+| **G. E. Dieter, *Mechanical Metallurgy*, McGraw-Hill (3rd ed., 1986)** | Canonical graduate textbook | Definitions of true stress/strain, Considère criterion, Hollomon law, Hall–Petch |
+| **W. D. Callister & D. G. Rethwisch, *Materials Science and Engineering: An Introduction*** (10th ed.) | Undergraduate reference | Standard definitions of YS, UTS, %EL, %RA |
+| **M. A. Meyers & K. K. Chawla, *Mechanical Behavior of Materials*, Cambridge (2nd ed., 2009)** | Modern microstructural perspective | Schmid factor, Taylor relation, dislocation theory |
+
+> **The IMRAD framework** (Introduction, Methods, Results, And Discussion) has been the
+> backbone of empirical scientific writing for over 50 years. ASTM E8 reporting requirements
+> map directly onto IMRAD with a few engineering-specific additions (specimen geometry,
+> calibration, uncertainty).
+""")
+
+    st.divider()
+
+    # ---------------- Section-by-section guide ----------------
+    st.subheader("🗂️ Section-by-section structure of your report")
+
+    st.markdown(r"""
+Every report submitted in this course must contain — in this order — the eight sections
+below. The required word count is approximate, not absolute; what matters is that the
+**purpose** of each section is fulfilled.
+""")
+
+    # ---- 1. Title page & abstract ----
+    with st.expander("1. **Title page & Abstract** (≈ 150–250 words)"):
+        st.markdown(r"""
+**Required content of the title page**
+
+* Title (specific and precise — *not* "Tensile testing", but e.g. *"Determination of the
+  Hall–Petch coefficient of nano- and microcrystalline pure copper using simulated
+  uniaxial tension at $\dot{\varepsilon} = 10^{-3}\,\text{s}^{-1}$"*).
+* Authors, institution, course, date.
+* Standard(s) used (ASTM E8/E8M, ISO 6892-1).
+
+**The Abstract** is the single most-read paragraph of any technical document. In one tight
+paragraph (150–250 words) state, in this order:
+
+1. **Context** — one sentence on why mechanical properties matter.
+2. **Objective** — what you set out to determine.
+3. **Method** — virtual tensile tests on N materials at strain rate $\dot{\varepsilon}$.
+4. **Key quantitative results** — at least *three* numerical values (e.g. $E$, $\sigma_y$, $n$).
+5. **Conclusion** — one sentence on what the data demonstrate.
+
+**Common pitfall.** *Don't* tease ("Results will be discussed below"). The abstract IS a
+mini-paper — give the numbers.
+""")
+
+    # ---- 2. Introduction ----
+    with st.expander("2. **Introduction & Theoretical Background** (≈ 1–2 pages)"):
+        st.markdown(r"""
+**Purpose.** Introduce the problem, its engineering relevance, and the equations the
+reader will need to interpret your data. Cite each equation properly.
+
+**Equations you must include and define every symbol of:**
+
+$$\sigma = \frac{F}{A_0} \qquad \varepsilon = \frac{\Delta L}{L_0} \qquad E = \left.\frac{d\sigma}{d\varepsilon}\right|_{\varepsilon\to 0} \quad\text{(Hooke's law)}$$
+
+$$\sigma_t = \sigma(1+\varepsilon) \qquad \varepsilon_t = \ln(1+\varepsilon) \quad\text{(true stress/strain)}$$
+
+$$\sigma_t = K\,\varepsilon_t^{\,n} \quad\text{(Hollomon's law — needed in Discussion)}$$
+
+$$\sigma_y = \sigma_0 + \frac{k_y}{\sqrt{d}} \quad\text{(Hall–Petch — for Tab 4 data)}$$
+
+$$\tau_{RSS} = \sigma\cos\phi\cos\lambda \quad\text{(Schmid's law — single-crystal slip)}$$
+
+$$U_r = \frac{\sigma_y^{\,2}}{2E} \qquad U_T \approx \tfrac{1}{2}(\sigma_y+\sigma_{UTS})\,\varepsilon_f \quad\text{(resilience and toughness)}$$
+
+**Common pitfall.** Defining symbols inline ("where $E$ is the modulus") is fine, but never
+introduce an equation without stating units and the reference frame (engineering vs true).
+
+**Cite at least:** ASTM E8, Dieter (true stress/strain, Hollomon), Callister (definitions),
+Hall (1951) and Petch (1953) for the Hall–Petch equation, Schmid (1924) for Schmid's law.
+""")
+
+    # ---- 3. Materials and Methods ----
+    with st.expander("3. **Materials & Methods** (≈ 1 page) — ASTM E8 §12 mandatory items"):
+        st.markdown(r"""
+**This is where most points are lost.** Section 12 of ASTM E8 lists the items a report MUST
+include for the result to be considered standards-compliant.
+
+**Required content (write each as its own short paragraph or bullet):**
+
+| # | Required item | Where to find it in this app |
+|---|---|---|
+| 1 | Material identification (alloy name, condition) | Tab 📈 *Material* dropdown |
+| 2 | Specimen geometry: shape, $L_0$, $A_0$, $d_0$ | Dog-bone schematic in the simulator panel |
+| 3 | Testing machine description | Virtual UTM, "displacement-controlled, screw-driven analogue" |
+| 4 | Strain-rate control (Method A or B per ASTM E8) | "Speed" slider — note that $0.5\times \approx 5\times 10^{-4}\;\text{s}^{-1}$ (Method A region) |
+| 5 | Temperature (10–38 °C per ASTM E8) | Stated as "room temperature, 23 ± 2 °C" |
+| 6 | Extensometer class & gauge length | Class B-2, $L_0 = 50$ mm equivalent |
+| 7 | Yield-strength method | 0.2 % offset (ASTM E8 §7.7.1) |
+| 8 | Number of specimens / repetitions | At minimum N = 3 per material per nominal grain size |
+
+> **Tip.** Refer to ASTM E8/E8M-25 by section number: "Per ASTM E8/E8M-25 §7.7.1 the
+> 0.2 % offset method was used." This phrasing is exactly what reviewers look for.
+""")
+
+    # ---- 4. Results ----
+    with st.expander("4. **Results** (≈ 2–3 pages) — data, plots, tables — *no* interpretation here"):
+        st.markdown(r"""
+The Results section presents what you measured **without** explaining why. Save the
+"why" for the Discussion. Each figure and table is numbered and called out in the text
+("Figure 1 shows…").
+
+**Required deliverables (use the simulator dashboards to populate these):**
+
+**Figure 1 — Engineering stress–strain curves of all materials tested** (overlay).
+Get raw data from Tab 📈 by reading the dashboard at multiple strain points; present in a
+table, then plot.
+
+**Figure 2 — True stress–strain curve for one ductile metal**, computed via
+$\sigma_t = \sigma(1+\varepsilon)$ and $\varepsilon_t = \ln(1+\varepsilon)$.
+
+**Figure 3 — Hall–Petch plot $\sigma_y$ vs $1/\sqrt{d}$** for the five metals in Tab 📏.
+Fit a linear regression; report slope $k_y$ and intercept $\sigma_0$ with $R^2$.
+
+**Table 1 — Tabulated tensile properties.** Required columns:
+
+| Material | $E$ (GPa) | $\sigma_y$ (MPa) | $\sigma_{UTS}$ (MPa) | $\varepsilon_f$ | %EL | %RA | $n$ (Hollomon) | $U_r$ (kJ/m³) |
+
+**Common pitfall.** Reporting $E$ from the secant on a single non-elastic point. Always fit the
+**initial linear region** (up to ~50 % of YS) — see the live "Tangent E (init)" read-out.
+""")
+
+    # ---- 5. Discussion ----
+    with st.expander("5. **Discussion** (≈ 2 pages) — the heart of the report"):
+        st.markdown(r"""
+This is where you *interpret* the data using the equations from the Introduction. Concrete
+checkpoints — at least one per simulator tab:
+
+**5.1 — Compare measured $E$ vs literature.** For each metal: compute $|E_{\text{meas}} - E_{\text{lit}}|/E_{\text{lit}}$
+and discuss the source of discrepancy (extensometer calibration, fitting range, atomic-origin
+considerations from Tab ⚡).
+
+**5.2 — Apply the Considère criterion.** Show that the strain at the maximum engineering
+stress equals (within scatter) the Hollomon exponent $n$ extracted from your true-stress
+fit. Tabulate $\varepsilon_{u,\text{measured}}$ vs $n$ for each ductile material.
+
+**5.3 — Hall–Petch validation.** Compare your fitted $k_y$ values (Tab 📏) against the
+literature ranges:
+
+| Metal | $k_y^{\,\text{lit}}$ (MPa·µm$^{1/2}$) |
+|---|---|
+| Cu (FCC) | 100–150 |
+| Ni (FCC) | 100–200 |
+| W (BCC) | 250–400 |
+| Co (HCP) | 150–250 |
+| 316L | 200–300 |
+
+Discuss systematic deviations and whether your *extrapolation* into the nano regime
+respects the inverse-Hall-Petch crossover at $d \approx 10$–20 nm.
+
+**5.4 — Atomic origin of $E$.** Using the Morse parameters from Tab ⚡, compute
+$k = 2D\alpha^2$ and predict $E_{\text{calc}} = k/r_0$ for each metal in your dataset. Compare
+to your measured $E$. Discuss why pair potentials systematically *under*-predict $E$ in metals
+and *over*-predict it in covalent solids (the structure-factor argument).
+
+**5.5 — Strengthening mechanisms.** Decompose at least one alloy's yield strength into the
+four contributions ($\sigma_0 + \sigma_{ss} + \sigma_{HP} + \sigma_{\rho}$) and verify the
+linear-superposition rule (Meyers & Chawla, Ch. 6).
+
+**Common pitfall.** Saying "the result agrees well with theory" without a number. Always
+quantify — *"the measured $k_y = 142$ MPa·µm$^{1/2}$ falls within 5 % of the upper bound of
+the literature range (100–150 MPa·µm$^{1/2}$, Callister 10e Table 7.5)."*
+""")
+
+    # ---- 6. Uncertainty ----
+    with st.expander("6. **Uncertainty Analysis** (≈ ½ page) — often skipped but always graded"):
+        st.markdown(r"""
+**Required:** propagate measurement uncertainty into at least one calculated property.
+
+For $\sigma = F/A_0$ with $A_0 = \pi d_0^2/4$, the standard propagation gives
+
+$$\frac{u_\sigma}{\sigma} = \sqrt{\left(\frac{u_F}{F}\right)^2 + \left(\frac{2\,u_{d_0}}{d_0}\right)^2}$$
+
+Typical lab values: $u_F/F \approx 0.5\%$, $u_{d_0}/d_0 \approx 0.1\%$ → $u_\sigma/\sigma \approx 0.5\%$.
+
+For $E = \sigma/\varepsilon$ in the elastic regime, the strain uncertainty dominates because
+$\varepsilon$ is small ($\sim 10^{-3}$). With $u_\varepsilon \approx 5\times 10^{-5}$ from a
+Class B-2 extensometer, $u_E/E \approx 5\%$ — this is why extensometer class is critical.
+
+**Discuss at least one** systematic error in your simulated data (e.g., quantization in the
+animation frame rate masks strain rates above $\sim 1\;\text{s}^{-1}$).
+""")
+
+    # ---- 7. Conclusions ----
+    with st.expander("7. **Conclusions** (≈ ¼ page) — short, numbered, quantitative"):
+        st.markdown(r"""
+A bullet list of **3–5 numbered statements**. Each must contain a number. Each must follow
+directly from the Results.
+
+> **Example template:**
+>
+> 1. The Young's modulus of A36 structural steel was measured at $E = 198 \pm 10$ GPa,
+>    consistent with the literature value of 200 GPa within 1 %.
+> 2. The Hall–Petch coefficient of nickel was fitted as $k_y = 142$ MPa·µm$^{1/2}$,
+>    matching the upper end of published values for FCC metals.
+> 3. The Hollomon exponent extracted from cold-rolled Cu was $n = 0.18$ ± 0.02, and the
+>    measured uniform elongation $\varepsilon_u = 0.19$ confirmed Considère's criterion
+>    $\varepsilon_u \approx n$ to within 6 %.
+>
+> *No new claims, no new equations, no opinions.*
+""")
+
+    # ---- 8. References ----
+    with st.expander("8. **References** — 5 minimum, formatted consistently"):
+        st.markdown(r"""
+Use a single, consistent citation style (IEEE numeric, APA, or Vancouver — pick one). At
+minimum your References list must contain:
+
+1. ASTM E8/E8M-25, *Standard Test Methods for Tension Testing of Metallic Materials*,
+   ASTM International, West Conshohocken, PA, 2025. DOI: 10.1520/E0008_E0008M-25.
+2. ISO 6892-1:2019, *Metallic Materials — Tensile Testing — Part 1: Method of Test at Room Temperature.*
+3. G. E. Dieter, *Mechanical Metallurgy*, 3rd ed., McGraw-Hill, 1986. Chapters 8–9.
+4. W. D. Callister and D. G. Rethwisch, *Materials Science and Engineering: An Introduction*,
+   10th ed., Wiley, 2018. Chapter 6.
+5. M. A. Meyers and K. K. Chawla, *Mechanical Behavior of Materials*, 2nd ed., Cambridge UP, 2009.
+6. E. O. Hall, *Proc. Phys. Soc. London B*, **64**, 747–753 (1951).
+7. N. J. Petch, *J. Iron Steel Inst.*, **174**, 25–28 (1953).
+
+> Cite the **standards by section number** in the body (`per ASTM E8 §7.7.1`), and cite
+> the **textbooks by chapter** (`Dieter Ch. 8`).
+""")
+
+    st.divider()
+
+    # ---------------- Rubric ----------------
+    st.subheader("✅ Self-grading rubric — check before submitting")
+    st.markdown(r"""
+The instructor will grade your report against the 20-item rubric below. Tick each item as
+you finish it. **Every unchecked box is a deduction.**
+""")
+
+    rubric_items = [
+        ("Title is specific (mentions material class, property measured, technique)", "rub_title"),
+        ("Abstract contains ≥ 3 numerical results", "rub_abstract"),
+        ("Introduction defines every symbol used in later equations", "rub_intro_sym"),
+        ("Hooke's, Hollomon's, Hall–Petch, and Schmid's laws are all cited", "rub_intro_eq"),
+        ("Methods §: specimen $L_0$ and $A_0$ explicitly stated", "rub_meth_geom"),
+        ("Methods §: strain rate quoted and ASTM E8 method (A or B) identified", "rub_meth_rate"),
+        ("Methods §: 0.2 % offset construction referenced (E8 §7.7.1)", "rub_meth_offset"),
+        ("Results: engineering AND true stress–strain plots both shown", "rub_res_curves"),
+        ("Results: tabulated $E$, $\\sigma_y$, $\\sigma_{UTS}$, $\\varepsilon_f$, %EL, %RA, $n$", "rub_res_table"),
+        ("Results: Hall–Petch plot with linear regression and $R^2$", "rub_res_hp"),
+        ("Discussion: measured vs literature comparison with quantitative deviation", "rub_disc_lit"),
+        ("Discussion: Considère criterion verified ($\\varepsilon_u \\approx n$)", "rub_disc_cons"),
+        ("Discussion: $E$ calculated from Morse parameters ($k = 2D\\alpha^2$)", "rub_disc_morse"),
+        ("Discussion: at least one strengthening-mechanism decomposition", "rub_disc_str"),
+        ("Uncertainty: propagation formula given for at least one property", "rub_unc"),
+        ("Conclusions: 3–5 numbered, quantitative statements", "rub_conc"),
+        ("All figures numbered and called out in the text", "rub_figs"),
+        ("References include ASTM E8, ISO 6892-1, Dieter, Callister, Hall, Petch", "rub_refs"),
+        ("Consistent citation style throughout", "rub_style"),
+        ("Total length 8–12 pages, single-column, 1.5-line spacing, 11 pt", "rub_format"),
+    ]
+
+    if "rubric_state" not in st.session_state:
+        st.session_state.rubric_state = {k: False for _, k in rubric_items}
+
+    cols = st.columns(2)
+    for i, (label, key) in enumerate(rubric_items):
+        with cols[i % 2]:
+            st.session_state.rubric_state[key] = st.checkbox(
+                label, value=st.session_state.rubric_state.get(key, False), key=key
+            )
+
+    score = sum(1 for v in st.session_state.rubric_state.values() if v)
+    pct = 100 * score / len(rubric_items)
+    if pct == 100:
+        st.success(f"🏆 **Self-check complete: {score}/{len(rubric_items)} ({pct:.0f}%)** — submit with confidence.")
+    elif pct >= 75:
+        st.info(f"📝 **Progress: {score}/{len(rubric_items)} ({pct:.0f}%)** — close. Address the unchecked items.")
+    else:
+        st.warning(f"⏳ **Progress: {score}/{len(rubric_items)} ({pct:.0f}%)** — keep working.")
 
 # ==========================================
 # TAB 6: FINAL ASSESSMENT
